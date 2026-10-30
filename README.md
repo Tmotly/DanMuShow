@@ -181,7 +181,17 @@ DANMU_CONFIG=/path/to/my.json node server/index.js
 ```bash
 bash tools/selftest.sh 21452505   # 接口 + B站连接 + 弹幕接收
 node tools/test-gifts.mjs 120000  # 盯几个热门房间，看礼物能不能解出来
-node tools/test-frontend.mjs      # 不需要浏览器，验证面板渲染逻辑
+node tools/test-douyin-decode.mjs # 用构造的 protobuf 帧验证抖音解码，不需要真实房间
+```
+
+几个前端测试（`test-frontend` / `test-scroll` / `test-obs`）在 jsdom 里跑面板，**不需要浏览器**。jsdom 不是运行时依赖，没装会自动跳过：
+
+```bash
+npm i -D jsdom
+node tools/test-frontend.mjs   # 礼物、表情、在线观众、昵称回填
+node tools/test-scroll.mjs     # 滚动条、淘汰、空状态
+node tools/test-obs.mjs        # obs 各种 URL 参数
+node tools/test-obs-style.mjs  # obs 透明样式断言（不需要 jsdom）
 ```
 
 ## 已知限制
@@ -194,4 +204,10 @@ node tools/test-frontend.mjs      # 不需要浏览器，验证面板渲染逻�
 
 ## 许可
 
-`vendor/douyin/webmssdk.js` 来自抖音网页端 webmssdk 的逆向产物（GPL-3.0，原作者 @hua0512，经 `douyin-danma` 整理），仅用于本地只读接入。其余代码自写。
+本项目以 **GPL-3.0**（`GPL-3.0-or-later`）发布，许可证全文见 [LICENSE](LICENSE)。
+
+选 GPL-3.0 而不是更宽松的协议，是因为 `vendor/douyin/webmssdk.js`：它是抖音网页端 webmssdk 的逆向产物，本身以 GPL-3.0 分发（原作者 @hua0512，经 `douyin-danma` 整理）。要和项目一起分发，整体就得按 GPL-3.0 兼容的方式发布。
+
+除该目录外，其余代码均为本项目自写。
+
+这套东西走的是各平台网页端的非公开接口，只适合本地自用、只读接入。请自行遵守 B站 / 抖音的用户协议，不要拿去做批量抓取、刷量或二次分发数据。

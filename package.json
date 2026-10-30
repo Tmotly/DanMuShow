@@ -1,9 +1,10 @@
 {
-  "name": "danmu-hub",
+  "name": "danmu-show",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "多平台直播弹幕聚合面板（B站 + 抖音），上礼物下弹幕的矩形展示层",
+  "description": "DanMuShow —— 多平台直播弹幕聚合面板（B站 + 抖音），上礼物下弹幕的矩形展示层",
+  "license": "GPL-3.0-or-later",
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",

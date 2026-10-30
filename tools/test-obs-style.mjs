@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const ROOT = 'C:/Users/jiaoj/Documents/deepseek-harness/default-workspace/danmu-hub';
+import { ROOT } from './_lib.mjs';
 const css = fs.readFileSync(path.join(ROOT, 'public/style.css'), 'utf8');
 const app = fs.readFileSync(path.join(ROOT, 'public/app.js'), 'utf8');
 

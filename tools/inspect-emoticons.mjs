@@ -1,7 +1,7 @@
 // 用真实 cookie 拉一次 B站表情包，看映射表里到底有什么
 import fs from 'node:fs';
 
-const ROOT = 'C:/Users/jiaoj/Documents/deepseek-harness/default-workspace/danmu-hub';
+import { ROOT } from './_lib.mjs';
 const cfg = JSON.parse(fs.readFileSync(`${ROOT}/config.json`, 'utf8'));
 const cookie = cfg.rooms.bilibili.cookie || '';
 const room = cfg.rooms.bilibili.roomId;

@@ -1,12 +1,10 @@
 // 验证两个区可滚动翻阅：DOM 结构、上限淘汰、空状态、按钮存在
 import fs from 'node:fs';
 import path from 'node:path';
-import { createRequire } from 'node:module';
+import { ROOT, requireJSDOM } from './_lib.mjs';
 
-const require = createRequire('D:/DanmuFree/sign/');
-const { JSDOM } = require('jsdom');
+const { JSDOM } = requireJSDOM();
 
-const ROOT = 'C:/Users/jiaoj/Documents/deepseek-harness/default-workspace/danmu-hub';
 const html = fs.readFileSync(path.join(ROOT, 'public/index.html'), 'utf8');
 const appJs = fs.readFileSync(path.join(ROOT, 'public/app.js'), 'utf8');
 const css = fs.readFileSync(path.join(ROOT, 'public/style.css'), 'utf8');
