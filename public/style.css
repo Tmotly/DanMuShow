@@ -1,0 +1,883 @@
+/* ============================================================
+   弹幕面板样式
+   设计原则：深色半透明底、信息密度高但不挤、平台靠颜色一眼分辨
+   ============================================================ */
+
+:root {
+  --bg: #0d1117;
+  --panel-bg: rgba(16, 20, 28, 0.92);
+  --panel-border: rgba(255, 255, 255, 0.08);
+  --text: #e6edf3;
+  --text-dim: #93a1b1;
+  --text-faint: #64717f;
+
+  --bili: #00aeec;
+  --bili-soft: rgba(0, 174, 236, 0.16);
+  --douyin: #fe2c55;
+  --douyin-soft: rgba(254, 44, 85, 0.16);
+
+  --gift-gold: #ffcc66;
+  --radius: 18px;
+  --font-scale: 1;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: radial-gradient(1200px 800px at 20% -10%, #1b2330 0%, #0b0e14 45%, #07090d 100%);
+  color: var(--text);
+  font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  font-size: calc(14px * var(--font-scale));
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+.stage {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+/* ---------------- 面板外框 ---------------- */
+
+.panel {
+  position: relative;
+  width: min(560px, 100%);
+  height: min(780px, 100%);
+  display: flex;
+  flex-direction: column;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  box-shadow:
+    0 30px 80px -20px rgba(0, 0, 0, 0.8),
+    0 0 0 1px rgba(255, 255, 255, 0.02) inset,
+    0 1px 0 rgba(255, 255, 255, 0.05) inset;
+  overflow: hidden;
+  backdrop-filter: blur(18px);
+}
+
+/* 顶部一条细光带，避免整块死黑 */
+.panel::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(120, 190, 255, 0.35), rgba(255, 120, 160, 0.25), transparent);
+  pointer-events: none;
+}
+
+/* ---------------- 头部 ---------------- */
+
+.panel-head {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 18px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* 顶部在线观众条 */
+.online-bar {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 5px 10px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  min-width: 0;
+}
+
+.online-label {
+  flex: none;
+  font-size: 0.68em;
+  letter-spacing: 0.1em;
+  color: var(--text-faint);
+}
+
+.online-total {
+  flex: none;
+  font-size: 1.08em;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #7fd0ff;
+  line-height: 1.2;
+}
+
+.online-split {
+  margin-left: auto;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 0.7em;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.online-split b {
+  font-weight: 600;
+}
+
+.online-split .bilibili b {
+  color: var(--bili);
+}
+
+.online-split .douyin b {
+  color: var(--douyin);
+}
+
+.head-left {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.head-title {
+  font-size: 0.95em;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.head-sub {
+  font-size: 0.72em;
+  color: var(--text-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.head-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 0.72em;
+  font-weight: 500;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  transition: opacity 0.2s ease;
+}
+
+.pill .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.pill.bilibili {
+  color: var(--bili);
+  background: var(--bili-soft);
+  border-color: rgba(0, 174, 236, 0.28);
+}
+
+.pill.douyin {
+  color: var(--douyin);
+  background: var(--douyin-soft);
+  border-color: rgba(254, 44, 85, 0.28);
+}
+
+.pill.offline {
+  color: var(--text-faint);
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+/* 已连接但房间没开播：琥珀色，和「直播中」区分开 */
+.pill.waiting {
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.12);
+  border-color: rgba(251, 191, 36, 0.26);
+}
+
+.pill .online {
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.pill.live .dot {
+  animation: pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.82); }
+}
+
+/* ---------------- 分区 ---------------- */
+
+.zone {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  position: relative;
+}
+
+.zone-gift {
+  flex: 0 0 32%;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: linear-gradient(180deg, rgba(255, 204, 102, 0.05), rgba(255, 255, 255, 0) 70%);
+}
+
+.zone-chat {
+  flex: 1 1 auto;
+}
+
+.zone-label {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 18px 6px;
+  font-size: 0.68em;
+  letter-spacing: 0.14em;
+  color: var(--text-faint);
+  text-transform: uppercase;
+}
+
+.zone-dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--text-faint);
+}
+
+.zone-gift .zone-label {
+  color: rgba(255, 204, 102, 0.72);
+}
+
+.zone-gift .zone-dot {
+  background: var(--gift-gold);
+  box-shadow: 0 0 6px var(--gift-gold);
+}
+
+.zone-count {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  opacity: 0.7;
+}
+
+/* 消息流：可上下翻阅，内容少时贴底显示
+   注意不能用 justify-content: flex-end 配 overflow，
+   那样溢出的部分会被挤到滚动起点之上、滚不到；
+   这里用一个可伸缩的 ::before 占位来把内容顶到底部。 */
+.stream {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0 12px 10px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+/* 内容不足一屏时把消息顶到底部；溢出时它自动塌成 0 */
+.stream::before {
+  content: "";
+  flex: 1 0 0;
+  min-height: 0;
+}
+
+/* 空状态是居中的，这时候不需要底部占位 */
+.stream.is-empty::before {
+  display: none;
+}
+
+/* 滚动条：细、暗、悬停才亮一点 */
+.stream::-webkit-scrollbar {
+  width: 8px;
+}
+
+.stream::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.stream::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  border-radius: 6px;
+}
+
+.stream:hover::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+/* 翻到上面时，右下角提示“有新消息”，点一下回到底部 */
+.to-bottom {
+  position: absolute;
+  right: 16px;
+  bottom: 8px;
+  z-index: 3;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(22, 27, 37, 0.92);
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.to-bottom:hover {
+  color: var(--text);
+  border-color: rgba(255, 255, 255, 0.26);
+}
+
+.to-bottom[hidden] {
+  display: none;
+}
+
+/* ---------------- 单条消息 ---------------- */
+
+.msg {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 5px 6px;
+  border-radius: 10px;
+  animation: slide-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform, opacity;
+}
+
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.msg.fade-out {
+  animation: fade-out 0.25s ease forwards;
+}
+
+@keyframes fade-out {
+  to {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+/* 头像 */
+.avatar {
+  position: relative;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #232a35;
+  display: grid;
+  place-items: center;
+  font-size: 0.72em;
+  font-weight: 600;
+  color: #cbd5e1;
+  margin-top: 1px;
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.06);
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.avatar.bilibili {
+  box-shadow: 0 0 0 1.5px rgba(0, 174, 236, 0.55);
+}
+
+.avatar.douyin {
+  box-shadow: 0 0 0 1.5px rgba(254, 44, 85, 0.55);
+}
+
+/* 内容列 */
+.msg-body {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.msg-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  line-height: 1.35;
+}
+
+.name {
+  font-size: 0.78em;
+  font-weight: 600;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 40%;
+}
+
+/* 平台标记 */
+.plat {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: 15px;
+  padding: 0 6px;
+  border-radius: 4px;
+  font-size: 0.62em;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+.plat.bilibili {
+  color: #fff;
+  background: #0a7ea4;
+}
+
+.plat.douyin {
+  color: #fff;
+  background: #d81e45;
+}
+
+/* 粉丝牌 */
+.medal {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: 15px;
+  padding: 0 5px;
+  border-radius: 4px;
+  font-size: 0.58em;
+  font-weight: 500;
+  color: #c8b6ff;
+  background: rgba(139, 92, 246, 0.16);
+  border: 1px solid rgba(139, 92, 246, 0.28);
+  max-width: 8em;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.msg-text {
+  font-size: 0.86em;
+  line-height: 1.45;
+  color: var(--text);
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* 弹幕里的表情图 */
+.dm-emoji {
+  height: 1.75em;
+  width: auto;
+  max-width: 8em;
+  object-fit: contain;
+  vertical-align: -0.45em;
+  margin: 0 1px;
+}
+
+/* 没有图片映射时，[花] 这类文本表情至少显示成一个胶囊，不像乱码 */
+.emoji-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 1.45em;
+  padding: 0 0.45em;
+  margin: 0 1px;
+  border-radius: 5px;
+  font-size: 0.92em;
+  color: #ffd08a;
+  background: rgba(255, 208, 138, 0.12);
+  border: 1px solid rgba(255, 208, 138, 0.22);
+  vertical-align: 0.05em;
+  white-space: nowrap;
+}
+
+/* 进入 / 关注 / 点赞这类弱信息 */
+.msg.system .msg-text {
+  color: var(--text-faint);
+  font-size: 0.78em;
+}
+
+.msg.system .name {
+  max-width: 30%;
+}
+
+/* ---------------- 礼物 ---------------- */
+
+.gift-stream {
+  gap: 2px;
+}
+
+.msg.gift {
+  align-items: center;
+  padding: 6px 8px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, rgba(255, 204, 102, 0.1), rgba(255, 204, 102, 0.02) 60%, transparent);
+  border: 1px solid rgba(255, 204, 102, 0.14);
+  margin-bottom: 4px;
+}
+
+.msg.gift.big {
+  background: linear-gradient(90deg, rgba(255, 120, 60, 0.18), rgba(255, 60, 120, 0.08) 60%, transparent);
+  border-color: rgba(255, 140, 90, 0.28);
+}
+
+.gift-emoji {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  font-size: 1em;
+  border-radius: 8px;
+  background: rgba(255, 204, 102, 0.12);
+}
+
+.gift-img {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: rgba(255, 204, 102, 0.08);
+}
+
+.gift-body {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+  line-height: 1.35;
+}
+
+.gift-name {
+  font-size: 0.86em;
+  font-weight: 700;
+  color: var(--gift-gold);
+}
+
+.gift-count {
+  font-size: 0.8em;
+  font-weight: 700;
+  color: #ff9f45;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 金额单独一个浅色小胶囊：和礼物名的金色、数量的橙色、暖色底都拉开 */
+.gift-price {
+  font-size: 0.68em;
+  font-weight: 600;
+  color: #f2f7ff;
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 5px;
+  padding: 0 5px;
+  line-height: 1.6;
+  font-variant-numeric: tabular-nums;
+}
+
+.msg.gift .name {
+  max-width: 8em;
+  font-size: 0.74em;
+}
+
+.msg.gift.bump {
+  animation: bump 0.32s ease;
+}
+
+@keyframes bump {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.015); }
+  100% { transform: scale(1); }
+}
+
+/* ---------------- 空状态 ---------------- */
+
+.empty {
+  margin: auto;
+  text-align: center;
+  color: var(--text-faint);
+  font-size: 0.78em;
+  line-height: 1.7;
+  padding: 0 24px;
+}
+
+.empty kbd {
+  font-family: inherit;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+  padding: 1px 5px;
+  font-size: 0.92em;
+}
+
+/* ---------------- OBS 模式：面板透明，内容自己带圆角底 ----------------
+   ?obs=1 下不画页面底色（html / body / 面板 / 分区全透明），
+   但每条弹幕的内容、平台标记、礼物条各自带一层圆角底，
+   这样压在画面上看得清，也不用加文字阴影。
+   ?obs=1&bg=1 时才要回整块深色卡片。                                     */
+
+body.obs {
+  background: transparent !important;
+}
+
+body.obs .stage {
+  padding: 0;
+}
+
+/* 面板和分区：底色、渐变、边框、阴影、毛玻璃全部清掉 */
+body.obs .panel,
+body.obs .panel-head,
+body.obs .zone,
+body.obs .zone-gift,
+body.obs .zone-chat,
+body.obs .stream {
+  background: transparent !important;
+  background-image: none !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+body.obs .panel {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+}
+
+body.obs .panel::before {
+  display: none;
+}
+
+/* OBS 里是纯观感层，不要滚动条和「回到底部」按钮
+   （滚动能力保留，只是不显示） */
+body.obs .stream {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+body.obs .stream::-webkit-scrollbar {
+  width: 0;
+  display: none;
+}
+
+body.obs .to-bottom {
+  display: none !important;
+}
+
+/* 弹幕内容：圆角气泡（只包住文字，不铺满整行） */
+body.obs .msg-text {
+  display: inline-block;
+  align-self: flex-start;
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 3px;
+  padding: 3px 10px;
+  border-radius: 11px;
+  background: rgba(10, 13, 18, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* 礼物条：同样给一块圆角底，稍微偏暖 */
+body.obs .msg.gift {
+  background: rgba(10, 13, 18, 0.62) !important;
+  border: 1px solid rgba(255, 204, 102, 0.18) !important;
+  border-radius: 12px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* 头部在线观众条（只有 head=1 时才出现） */
+body.obs .online-bar {
+  background: rgba(10, 13, 18, 0.55) !important;
+  border: 1px solid rgba(255, 255, 255, 0.07) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* 平台标记保持不透明实色，压在画面上才看得清 */
+body.obs .plat.bilibili {
+  background: #0a7ea4;
+}
+
+body.obs .plat.douyin {
+  background: #d81e45;
+}
+
+/* 头像用回普通模式那圈平台色描边，不再压暗边 */
+body.obs .avatar {
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.06);
+}
+
+body.obs .avatar.bilibili {
+  box-shadow: 0 0 0 1.5px rgba(0, 174, 236, 0.55);
+}
+
+body.obs .avatar.douyin {
+  box-shadow: 0 0 0 1.5px rgba(254, 44, 85, 0.55);
+}
+
+/* 不加文字阴影 —— 靠上面的圆角底保证可读性 */
+
+/* ?obs=1&bg=1：想要以前那种深色卡片时用 */
+body.obs.keep-bg .panel {
+  background: rgba(10, 13, 18, 0.82) !important;
+}
+
+body.obs.keep-bg .zone-gift {
+  background: linear-gradient(180deg, rgba(255, 204, 102, 0.05), rgba(255, 255, 255, 0) 70%) !important;
+}
+
+body.obs.keep-bg .panel-head {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+body.obs.keep-bg .zone-gift {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+/* bg=1：面板已经是深色卡片了，内容气泡就不要再叠一层 */
+body.obs.keep-bg .msg-text {
+  display: block;
+  width: auto;
+  max-width: none;
+  margin-top: 0;
+  padding: 0;
+  border: none !important;
+  border-radius: 0;
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+body.obs.keep-bg .msg.gift {
+  background: linear-gradient(90deg, rgba(255, 204, 102, 0.1), rgba(255, 204, 102, 0.02) 60%, transparent) !important;
+  border-color: rgba(255, 204, 102, 0.14) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+body.obs.keep-bg .online-bar {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+body.obs.keep-bg .avatar {
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.06);
+}
+
+body.obs.keep-bg .avatar.bilibili {
+  box-shadow: 0 0 0 1.5px rgba(0, 174, 236, 0.55);
+}
+
+body.obs.keep-bg .avatar.douyin {
+  box-shadow: 0 0 0 1.5px rgba(254, 44, 85, 0.55);
+}
+
+body.obs.keep-bg .plat.bilibili {
+  background: #0a7ea4 !important;
+}
+
+body.obs.keep-bg .plat.douyin {
+  background: #d81e45 !important;
+}
+
+body.obs.keep-bg .medal {
+  background: rgba(139, 92, 246, 0.16) !important;
+  border-color: rgba(139, 92, 246, 0.28) !important;
+}
+
+body.obs.keep-bg .emoji-chip {
+  background: rgba(255, 208, 138, 0.12) !important;
+  border-color: rgba(255, 208, 138, 0.22) !important;
+}
+
+body.obs.keep-bg .gift-emoji {
+  background: rgba(255, 204, 102, 0.12) !important;
+}
+
+body.obs.keep-bg .avatar {
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.06);
+}
+
+body.obs.keep-bg .avatar.bilibili {
+  box-shadow: 0 0 0 1.5px rgba(0, 174, 236, 0.55);
+}
+
+body.obs.keep-bg .avatar.douyin {
+  box-shadow: 0 0 0 1.5px rgba(254, 44, 85, 0.55);
+}
+
+body.no-head .panel-head {
+  display: none;
+}
+
+/* 窄屏适配 */
+@media (max-width: 460px) {
+  .stage { padding: 8px; }
+  .panel { border-radius: 14px; }
+  .zone-gift { flex-basis: 38%; }
+  .name { max-width: 34%; }
+}

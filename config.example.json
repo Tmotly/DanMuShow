@@ -1,0 +1,22 @@
+{
+  "port": 7801,
+  "rooms": {
+    "bilibili": {
+      "roomId": "",
+      "cookie": ""
+    },
+    "douyin": {
+      "roomId": "",
+      "cookie": ""
+    }
+  },
+  "display": {
+    "title": "",
+    "maxDanmaku": 200,
+    "maxGifts": 30,
+    "showEnter": false,
+    "showLike": false,
+    "fontScale": 1,
+    "showHeader": true
+  }
+}

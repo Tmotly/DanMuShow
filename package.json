@@ -1,0 +1,19 @@
+{
+  "name": "danmu-hub",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "多平台直播弹幕聚合面板（B站 + 抖音），上礼物下弹幕的矩形展示层",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "demo": "node server/index.js --demo",
+    "selftest": "bash tools/selftest.sh"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

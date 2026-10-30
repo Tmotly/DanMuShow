@@ -1,0 +1,223 @@
+import http from 'node:http';
+import fs from 'node:fs';
+import path from 'node:path';
+import { WebSocketServer } from 'ws';
+import { ROOT, loadConfig, saveConfig, ensureConfigFile } from './config.js';
+import { onClient, state, stats, broadcast, setPlatform } from './hub.js';
+import { BilibiliSource, checkLogin } from './platforms/bilibili.js';
+import { DouyinSource } from './platforms/douyin.js';
+import { startDemo, stopDemo } from './demo.js';
+
+const log = (...a) => console.log(new Date().toLocaleTimeString('zh-CN', { hour12: false }), ...a);
+
+ensureConfigFile();
+const cfg = loadConfig();
+const PORT = Number(process.env.PORT || cfg.port || 7801);
+const PUBLIC = path.join(ROOT, 'public');
+
+const MIME = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.mjs': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.ico': 'image/x-icon',
+  '.woff2': 'font/woff2',
+};
+
+const sources = { bilibili: null, douyin: null };
+let demoOn = false;
+
+/* ---------------- 平台启动 / 停止 ---------------- */
+
+function startPlatform(id) {
+  const conf = cfg.rooms[id];
+  const existing = sources[id];
+  if (existing) {
+    existing.stop();
+    sources[id] = null;
+  }
+  if (!conf || !String(conf.roomId || '').trim()) {
+    setPlatform(id, { status: 'idle', roomId: '', title: '', anchor: '', online: 0, error: '' });
+    return;
+  }
+  const Cls = id === 'bilibili' ? BilibiliSource : DouyinSource;
+  sources[id] = new Cls({ roomId: conf.roomId, cookie: conf.cookie }, { log });
+  sources[id].start().catch((e) => {
+    log(`[${id}] 启动失败`, e.message);
+    setPlatform(id, { status: 'error', error: e.message });
+  });
+}
+
+function stopPlatform(id) {
+  sources[id]?.stop();
+  sources[id] = null;
+}
+
+/* ---------------- 头像代理（绕热链 + 本地缓存） ---------------- */
+
+const AVATAR_ALLOW = ['hdslb.com', 'bilibili.com', 'douyinpic.com', 'douyincdn.com', 'byteimg.com', 'bytedance.com', 'douyin.com'];
+const avatarCache = new Map();
+const AVATAR_CACHE_MAX = 400;
+
+async function handleAvatar(req, res, url) {
+  const target = url.searchParams.get('u');
+  if (!target) return json(res, 400, { error: 'missing u' });
+  let parsed;
+  try {
+    parsed = new URL(target);
+  } catch {
+    return json(res, 400, { error: 'bad url' });
+  }
+  if (!AVATAR_ALLOW.some((h) => parsed.hostname.endsWith(h))) {
+    return json(res, 403, { error: 'host not allowed' });
+  }
+
+  const hit = avatarCache.get(target);
+  if (hit) {
+    res.writeHead(200, { 'content-type': hit.type, 'cache-control': 'public, max-age=86400' });
+    return res.end(hit.buf);
+  }
+
+  try {
+    const r = await fetch(target, {
+      headers: {
+        'user-agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36',
+        referer: parsed.hostname.includes('hdslb') ? 'https://live.bilibili.com/' : 'https://live.douyin.com/',
+      },
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const buf = Buffer.from(await r.arrayBuffer());
+    const type = r.headers.get('content-type') || 'image/jpeg';
+    if (avatarCache.size > AVATAR_CACHE_MAX) avatarCache.clear();
+    avatarCache.set(target, { buf, type });
+    res.writeHead(200, { 'content-type': type, 'cache-control': 'public, max-age=86400' });
+    res.end(buf);
+  } catch (e) {
+    res.writeHead(404, { 'content-type': 'text/plain' });
+    res.end('avatar not found');
+  }
+}
+
+function json(res, code, obj) {
+  const body = JSON.stringify(obj);
+  res.writeHead(code, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(body);
+}
+
+async function readBody(req) {
+  const chunks = [];
+  for await (const c of req) chunks.push(c);
+  if (!chunks.length) return {};
+  try {
+    return JSON.parse(Buffer.concat(chunks).toString('utf8'));
+  } catch {
+    return {};
+  }
+}
+
+/* ---------------- HTTP ---------------- */
+
+const server = http.createServer(async (req, res) => {
+  const url = new URL(req.url, `http://${req.headers.host}`);
+  const p = url.pathname;
+
+  if (p === '/api/state') {
+    return json(res, 200, { config: cfg, state, stats: stats() });
+  }
+
+  if (p === '/api/avatar') return handleAvatar(req, res, url);
+
+  // B站登录态检查：控制台用来提示「填了 Cookie 才看得到全名/头像」
+  if (p === '/api/bili/login') {
+    const cookie = url.searchParams.get('cookie') || cfg.rooms.bilibili?.cookie || '';
+    const r = await checkLogin(cookie);
+    return json(res, 200, r);
+  }
+
+  if (p === '/api/config' && req.method === 'POST') {
+    const patch = await readBody(req);
+    const before = JSON.stringify(cfg.rooms);
+    const next = saveConfig(patch);
+    // 就地更新配置对象（引用被其他地方持有）
+    Object.assign(cfg, next);
+    const after = JSON.stringify(cfg.rooms);
+    if (before !== after) {
+      for (const id of ['bilibili', 'douyin']) startPlatform(id);
+    }
+    broadcast({ type: 'config', config: cfg });
+    return json(res, 200, { ok: true, config: cfg });
+  }
+
+  if (p === '/api/restart' && req.method === 'POST') {
+    const body = await readBody(req);
+    const id = body.platform;
+    if (id === 'bilibili' || id === 'douyin') startPlatform(id);
+    return json(res, 200, { ok: true });
+  }
+
+  if (p === '/api/demo' && req.method === 'POST') {
+    const body = await readBody(req);
+    demoOn = !!body.on;
+    if (demoOn) startDemo();
+    else stopDemo();
+    return json(res, 200, { ok: true, on: demoOn });
+  }
+
+  // 静态文件
+  let filePath = path.join(PUBLIC, p === '/' ? 'index.html' : p);
+  if (!filePath.startsWith(PUBLIC)) return json(res, 403, { error: 'forbidden' });
+  if (fs.existsSync(filePath) && fs.statSync(filePath).isDirectory()) filePath = path.join(filePath, 'index.html');
+  if (!fs.existsSync(filePath)) {
+    // 无扩展名的路径回落到 index.html（方便 /control 这类路由）
+    if (!path.extname(p)) filePath = path.join(PUBLIC, 'index.html');
+    else return json(res, 404, { error: 'not found' });
+  }
+  const ext = path.extname(filePath);
+  res.writeHead(200, {
+    'content-type': MIME[ext] || 'application/octet-stream',
+    'cache-control': 'no-cache',
+  });
+  fs.createReadStream(filePath).pipe(res);
+});
+
+/* ---------------- WebSocket ---------------- */
+
+const wss = new WebSocketServer({ server, path: '/ws' });
+wss.on('connection', (ws) => {
+  const off = onClient(ws);
+  ws.on('close', off);
+  ws.on('error', off);
+});
+
+/* ---------------- 启动 ---------------- */
+
+server.listen(PORT, '127.0.0.1', () => {
+  log('');
+  log('  弹幕聚合面板已启动');
+  log(`  展示面板  http://127.0.0.1:${PORT}/`);
+  log(`  控制台    http://127.0.0.1:${PORT}/control.html`);
+  log(`  OBS 源    http://127.0.0.1:${PORT}/?obs=1`);
+  log('');
+  for (const id of ['bilibili', 'douyin']) startPlatform(id);
+
+  if (process.argv.includes('--demo')) {
+    demoOn = true;
+    startDemo();
+    log('  演示模式：正在生成模拟消息');
+  }
+});
+
+function shutdown() {
+  log('正在退出…');
+  stopDemo();
+  for (const id of ['bilibili', 'douyin']) stopPlatform(id);
+  server.close(() => process.exit(0));
+  setTimeout(() => process.exit(0), 1500);
+}
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);

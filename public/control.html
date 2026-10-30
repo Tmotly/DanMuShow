@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>弹幕面板 · 控制台</title>
+    <link rel="stylesheet" href="/style.css" />
+    <link rel="stylesheet" href="/control.css" />
+  </head>
+  <body class="control-body">
+    <div class="wrap">
+      <header class="c-head">
+        <div>
+          <h1>弹幕聚合面板</h1>
+          <p class="c-sub">B站 + 抖音 同屏显示，上礼物、下弹幕</p>
+        </div>
+        <div class="c-actions">
+          <a class="btn ghost" href="/?obs=1" target="_blank">OBS 源</a>
+          <a class="btn" href="/" target="_blank">打开面板</a>
+        </div>
+      </header>
+
+      <section class="card status-card">
+        <div class="card-title">连接状态</div>
+        <div class="status-grid" id="statusGrid"></div>
+      </section>
+
+      <section class="card">
+        <div class="card-title">直播间</div>
+        <div class="grid-2">
+          <div class="field">
+            <label>
+              <span class="plat bilibili">B站</span>
+              房间号
+            </label>
+            <input id="biliRoom" placeholder="比如 21452505，也可以粘完整链接" />
+            <small>短号或真实房号都行。<b>匿名就能收弹幕</b>，可不填 Cookie。</small>
+          </div>
+          <div class="field">
+            <label>
+              <span class="plat douyin">抖音</span>
+              房间号
+            </label>
+            <input id="dyRoom" placeholder="比如 123456789（live.douyin.com 后面那串）" />
+            <small>直播伴侣开着或不开都行，填房间号即可只读接入。</small>
+          </div>
+        </div>
+
+        <details class="advanced">
+          <summary>Cookie（B站建议填，抖音可不填）</summary>
+          <div class="grid-2">
+            <div class="field">
+              <label>
+                B站 Cookie
+                <button class="btn tiny" id="checkBili" type="button">检测登录态</button>
+              </label>
+              <textarea id="biliCookie" rows="3" placeholder="SESSDATA=...; bili_jct=...; DedeUserID=..."></textarea>
+              <small id="biliLoginHint">
+                不登录也能收弹幕，但平台会把部分用户昵称打码成 <code>一***</code>，表情也只能显示成
+                <code>[花]</code> 文字。填了 Cookie 才会显示全名，并加载表情图片。
+              </small>
+            </div>
+            <div class="field">
+              <label>抖音 Cookie</label>
+              <textarea id="dyCookie" rows="3" placeholder="ttwid=...;（留空会自动获取）"></textarea>
+              <small>留空即可，程序会自己拿 ttwid。</small>
+            </div>
+          </div>
+          <details class="sub-help">
+            <summary>B站 Cookie 怎么拿</summary>
+            <ol class="steps">
+              <li>浏览器登录 B站，打开任意直播间页面</li>
+              <li>按 <code>F12</code> → 切到「网络 / Network」→ 刷新页面</li>
+              <li>点任意一个 <code>api.live.bilibili.com</code> 的请求</li>
+              <li>在「请求标头」里找到 <code>Cookie:</code> 那一整行，整行复制粘贴到上面</li>
+              <li>重点是里面有 <code>SESSDATA</code> 和 <code>DedeUserID</code> 这两段</li>
+            </ol>
+          </details>
+        </details>
+      </section>
+
+      <section class="card">
+        <div class="card-title">显示</div>
+        <div class="grid-2">
+          <div class="field">
+            <label>面板标题</label>
+            <input id="dispTitle" placeholder="留空则用直播间标题" />
+          </div>
+          <div class="field">
+            <label>弹幕保留条数</label>
+            <input id="maxDanmaku" type="number" min="20" max="500" step="10" />
+            <small>面板里可以往上翻，这个数字决定最多能翻多久。</small>
+          </div>
+          <div class="field">
+            <label>礼物保留条数</label>
+            <input id="maxGifts" type="number" min="5" max="100" />
+            <small>礼物区同样可滚动翻阅。</small>
+          </div>
+          <div class="field">
+            <label>字号缩放</label>
+            <input id="fontScale" type="range" min="0.8" max="1.6" step="0.05" />
+          </div>
+        </div>
+        <div class="toggles">
+          <label class="toggle"><input type="checkbox" id="showEnter" /> 显示进场提示</label>
+          <label class="toggle"><input type="checkbox" id="showLike" /> 显示点赞 / 关注</label>
+          <label class="toggle"><input type="checkbox" id="showHeader" /> 显示面板头部</label>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-title">操作</div>
+        <div class="c-actions left">
+          <button class="btn primary" id="save">保存并重连</button>
+          <button class="btn ghost" id="demo">开启演示模式</button>
+          <button class="btn ghost" id="copyObs">复制 OBS 地址</button>
+        </div>
+        <p class="hint" id="hint"></p>
+        <details class="advanced">
+          <summary>OBS 怎么配</summary>
+          <ol class="steps">
+            <li>OBS → 来源 → 添加「浏览器」</li>
+            <li>地址填 <code id="obsUrl">http://127.0.0.1:7801/?obs=1</code></li>
+            <li>宽高按你想要的矩形填（建议 560 × 780），勾上「关机时关闭」</li>
+            <li><b>背景是纯透明的</b>，直接叠在画面上方就是字幕层，不需要再做色键</li>
+            <li>想连头部（标题 + 在线观众）一起叠：地址后面加 <code>&amp;head=1</code></li>
+            <li>想要回深色卡片：地址后面加 <code>&amp;bg=1</code></li>
+          </ol>
+        </details>
+      </section>
+    </div>
+    <script src="/control.js" type="module"></script>
+  </body>
+</html>

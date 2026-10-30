@@ -1,0 +1,14 @@
+node_modules/
+.npmcache/
+*.log
+.DS_Store
+
+# 本地配置：里面有房间号和 Cookie，绝对不要提交
+config.json
+config.local.json
+*.secret.json
+
+# 浏览器 / 调试残留
+.edge-*/
+.chrome-*/
+*.pid

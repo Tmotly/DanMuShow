@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>弹幕面板</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <div class="stage">
+      <section class="panel" id="panel">
+        <header class="panel-head" id="head">
+          <div class="head-row">
+            <div class="head-left">
+              <span class="head-title" id="title">直播弹幕</span>
+              <span class="head-sub" id="subtitle"></span>
+            </div>
+            <div class="head-right" id="platforms"></div>
+          </div>
+
+          <div class="online-bar" id="onlineBar" hidden>
+            <span class="online-label">在线观众</span>
+            <span class="online-total" id="onlineTotal">0</span>
+            <span class="online-split" id="onlineSplit"></span>
+          </div>
+        </header>
+
+        <div class="zone zone-gift" id="giftZone">
+          <div class="zone-label">
+            <span class="zone-dot"></span>礼物
+            <span class="zone-count" id="giftCount"></span>
+          </div>
+          <div class="stream gift-stream" id="giftStream"></div>
+          <button class="to-bottom" id="giftToBottom" type="button" hidden>↓ 有新礼物</button>
+        </div>
+
+        <div class="zone zone-chat" id="chatZone">
+          <div class="zone-label">
+            <span class="zone-dot"></span>弹幕
+            <span class="zone-count" id="chatCount"></span>
+          </div>
+          <div class="stream chat-stream" id="chatStream"></div>
+          <button class="to-bottom" id="chatToBottom" type="button" hidden>↓ 有新弹幕</button>
+        </div>
+      </section>
+    </div>
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>
