@@ -1,9 +1,9 @@
 import http from 'node:http';
-import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { WebSocketServer } from 'ws';
-import { ROOT, loadConfig, saveConfig, ensureConfigFile } from './config.js';
+import { loadConfig, saveConfig, ensureConfigFile, effectiveConfigPath } from './config.js';
+import { normalizeRel, assetExists, readAsset, PACKAGED } from './assets.js';
 import { onClient, state, stats, broadcast, setPlatform } from './hub.js';
 import { BilibiliSource, checkLogin } from './platforms/bilibili.js';
 import { DouyinSource } from './platforms/douyin.js';
@@ -14,7 +14,6 @@ const log = (...a) => console.log(new Date().toLocaleTimeString('zh-CN', { hour1
 ensureConfigFile();
 const cfg = loadConfig();
 const PORT = Number(process.env.PORT || cfg.port || 7801);
-const PUBLIC = path.join(ROOT, 'public');
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -169,21 +168,22 @@ const server = http.createServer(async (req, res) => {
     return json(res, 200, { ok: true, on: demoOn });
   }
 
-  // 静态文件
-  let filePath = path.join(PUBLIC, p === '/' ? 'index.html' : p);
-  if (!filePath.startsWith(PUBLIC)) return json(res, 403, { error: 'forbidden' });
-  if (fs.existsSync(filePath) && fs.statSync(filePath).isDirectory()) filePath = path.join(filePath, 'index.html');
-  if (!fs.existsSync(filePath)) {
+  // 静态文件（源码运行时读 public/，打包后从内联资源里取）
+  const rel = normalizeRel(p === '/' ? 'index.html' : p);
+  if (!rel) return json(res, 403, { error: 'forbidden' });
+
+  let body = assetExists(rel) ? readAsset(rel) : null;
+  if (!body && !path.extname(rel)) {
     // 无扩展名的路径回落到 index.html（方便 /control 这类路由）
-    if (!path.extname(p)) filePath = path.join(PUBLIC, 'index.html');
-    else return json(res, 404, { error: 'not found' });
+    body = readAsset('index.html');
   }
-  const ext = path.extname(filePath);
+  if (!body) return json(res, 404, { error: 'not found' });
+
   res.writeHead(200, {
-    'content-type': MIME[ext] || 'application/octet-stream',
+    'content-type': MIME[path.extname(rel)] || MIME['.html'],
     'cache-control': 'no-cache',
   });
-  fs.createReadStream(filePath).pipe(res);
+  res.end(body);
 });
 
 /* ---------------- WebSocket ---------------- */
@@ -216,12 +216,24 @@ function openBrowser(url) {
   }
 }
 
+server.on('error', (e) => {
+  if (e.code === 'EADDRINUSE') {
+    log(`  端口 ${PORT} 已被占用，可能已经开着一个 DanMuShow 了。`);
+    log(`  直接访问 http://127.0.0.1:${PORT}/control.html 就行。`);
+    openBrowser(`http://127.0.0.1:${PORT}/control.html`);
+    setTimeout(() => process.exit(0), 2500);
+    return;
+  }
+  throw e;
+});
+
 server.listen(PORT, '127.0.0.1', () => {
   log('');
   log('  弹幕聚合面板已启动');
   log(`  展示面板  http://127.0.0.1:${PORT}/`);
   log(`  控制台    http://127.0.0.1:${PORT}/control.html`);
   log(`  OBS 源    http://127.0.0.1:${PORT}/?obs=1`);
+  log(`  配置文件  ${effectiveConfigPath()}`);
   log('');
   for (const id of ['bilibili', 'douyin']) startPlatform(id);
 
@@ -231,7 +243,10 @@ server.listen(PORT, '127.0.0.1', () => {
     log('  演示模式：正在生成模拟消息');
   }
 
-  if (process.argv.includes('--open')) openBrowser(`http://127.0.0.1:${PORT}/control.html`);
+  // 双击 exe 时默认帮用户打开控制台；源码运行要显式 --open
+  if (PACKAGED || process.argv.includes('--open')) {
+    openBrowser(`http://127.0.0.1:${PORT}/control.html`);
+  }
 });
 
 function shutdown() {

@@ -9,12 +9,17 @@
   "scripts": {
     "start": "node server/index.js",
     "demo": "node server/index.js --demo",
-    "selftest": "bash tools/selftest.sh"
+    "selftest": "bash tools/selftest.sh",
+    "pack": "node build/pack.mjs"
   },
   "dependencies": {
     "ws": "^8.18.0"
   },
   "engines": {
     "node": ">=18"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "postject": "^1.0.0-alpha.6"
   }
 }

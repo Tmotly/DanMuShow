@@ -20,9 +20,26 @@
 
 ## 快速开始
 
-### Windows：双击就能跑（不需要懂命令行）
+### 最省事：直接下 exe（什么都不用装）
 
-**只有一步前置：装 Node.js。** 打开 <https://nodejs.org/zh-cn/download>，下载 **LTS** 的 Windows 安装包（`.msi`），双击，一路「下一步」。
+去 [Releases](../../releases) 下载 **`DanMuShow.exe`**，双击即可。
+
+- 单文件，**不需要装 Node.js**，也不需要装任何运行库
+- 双击后会自动打开控制台网页，填房间号保存就能用
+- 关掉黑窗口就是停止服务
+- 体积 ~90 MB：里面打包了一整个 Node 运行时，所以偏大，但没有别的依赖
+
+> **第一次运行 Windows 会拦一下**，提示「Windows 已保护你的电脑」——这是没买代码签名证书的正常现象。点「**更多信息**」→「**仍要运行**」即可，只会拦这一次。
+
+配置存在哪里：
+
+- 默认 `%LOCALAPPDATA%\DanMuShow\config.json`（启动时窗口里会打印完整路径）
+- 想做成绿色版（配置跟 exe 一起放在 U 盘里带走）：把 `config.json` 放到 exe 同目录，程序会优先用它
+- 也可以用环境变量指定：`set DANMU_DATA=D:\某目录`
+
+### 从源码跑（Windows）
+
+**前置：装 Node.js。** 打开 <https://nodejs.org/zh-cn/download>，下载 **LTS** 的 Windows 安装包（`.msi`），双击，一路「下一步」。
 
 然后双击项目里的 **`启动.bat`**：
 
@@ -51,6 +68,19 @@ npm run demo
 ```
 
 浏览器打开 <http://127.0.0.1:7801/>，会持续冒出模拟弹幕和礼物，不用连真房间。
+
+## 自己打 exe
+
+```bash
+npm install
+npm run pack     # 产物：dist/DanMuShow.exe
+```
+
+用 Node 官方的 **SEA**（Single Executable Application）打包，只依赖本机的 `node.exe` 和 npm 上的 `postject`，**不下载任何预编译二进制**——所以国内网络也能打，不会卡在 GitHub 上。
+
+流程是：esbuild 把整个 ESM 项目打成单文件 CJS（前端资源以 base64 内联）→ 生成 SEA blob → 注入到 `node.exe` 副本。
+
+产物没做代码签名，所以别人第一次运行会看到 SmartScreen 提示，这是正常的。
 
 ## 两个平台怎么填
 
