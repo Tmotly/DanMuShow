@@ -1,0 +1,8 @@
+# 统一换行符：批处理必须是 CRLF，否则 cmd 解析会出问题
+* text=auto eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.sh  text eol=lf
+
+# webmssdk 是第三方产物，不要参与 diff 统计
+vendor/** -diff

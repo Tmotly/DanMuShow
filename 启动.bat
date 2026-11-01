@@ -1,25 +1,87 @@
 @echo off
-chcp 65001 >nul
+chcp 936 >nul
+setlocal enabledelayedexpansion
+title DanMuShow µ¯Ä»Ãæ°å
 cd /d "%~dp0"
 
+echo.
+echo  ==========================================
+echo    DanMuShow  ¶àÆ½Ì¨Ö±²¥µ¯Ä»Ãæ°å
+echo  ==========================================
+echo.
+
+rem ---------- 1. ¼ì²é Node.js ----------
 where node >nul 2>nul
-if errorlevel 1 (
-  echo [é”™è¯¯] æ²¡æ‰¾åˆ° Node.jsï¼Œè¯·å…ˆè£… Node 22 æˆ–æ›´é«˜ç‰ˆæœ¬ï¼šhttps://nodejs.org/
-  pause
-  exit /b 1
-)
+if errorlevel 1 goto no_node
 
-if not exist node_modules (
-  echo é¦–æ¬¡è¿è¡Œï¼Œæ­£åœ¨å®‰è£…ä¾èµ–...
-  call npm install --no-audit --no-fund
-  if errorlevel 1 (
-    echo [é”™è¯¯] ä¾èµ–å®‰è£…å¤±è´¥
-    pause
-    exit /b 1
-  )
-)
+for /f "delims=" %%v in ('node -v 2^>nul') do set "NODE_VER=%%v"
+if not defined NODE_VER goto no_node
+set "NODE_MAJOR=!NODE_VER:~1,2!"
+set "NODE_MAJOR=!NODE_MAJOR:.=!"
+if !NODE_MAJOR! LSS 18 goto old_node
 
-echo æ­£åœ¨å¯åŠ¨å¼¹å¹•èšåˆé¢æ¿...
-start "" http://127.0.0.1:7801/control.html
-node server/index.js
-pause
+echo  [1/3] Node.js !NODE_VER!  ÒÑ¾ÍÐ÷
+echo.
+
+rem ---------- 2. °²×°ÒÀÀµ ----------
+if exist "node_modules\ws\package.json" goto run
+
+echo  [2/3] Ê×´ÎÔËÐÐ£¬ÕýÔÚ°²×°ÒÀÀµ£¨Ö»ÓÐÒ»¸ö ws£¬ºÜ¿ì£©...
+echo.
+call npm install --no-audit --no-fund
+if exist "node_modules\ws\package.json" goto run
+
+echo.
+echo  Ö±Á¬ npm Ê§°Ü£¬¸ÄÓÃ¹úÄÚ¾µÏñÖØÊÔ...
+call npm install --no-audit --no-fund --registry=https://registry.npmmirror.com
+if not exist "node_modules\ws\package.json" goto npm_fail
+
+rem ---------- 3. Æô¶¯ ----------
+:run
+echo.
+echo  [3/3] ÕýÔÚÆô¶¯£¬ÉÔºó»á×Ô¶¯´ò¿ª¿ØÖÆÌ¨ÍøÒ³...
+echo.
+echo    ¿ØÖÆÌ¨  http://127.0.0.1:7801/control.html
+echo    Ãæ°å    http://127.0.0.1:7801/
+echo.
+echo  ¹ØµôÕâ¸ö´°¿Ú = Í£Ö¹·þÎñ
+echo.
+node server/index.js --open
+echo.
+echo  ·þÎñÒÑÍ£Ö¹¡£
+echo  °´ÈÎÒâ¼ü¹Ø±Õ´°¿Ú¡£
+pause >nul
+exit /b 0
+
+:no_node
+echo  [´íÎó] ÕâÌ¨µçÄÔ»¹Ã»ÓÐ°²×° Node.js£¬³ÌÐòÅÜ²»ÆðÀ´¡£
+echo.
+echo  ½â¾ö²½Öè£º
+echo    1) ÏÂÃæµØÖ·»á×Ô¶¯´ò¿ª£¬ÏÂÔØ LTS °æ±¾£¨Windows °²×°°ü .msi£©
+echo    2) Ë«»÷°²×°°ü£¬Ò»Â·µã ÏÂÒ»²½ ×°Íê
+echo    3) ¹Øµô±¾´°¿Ú£¬ÖØÐÂË«»÷ Æô¶¯.bat
+echo.
+start "" https://nodejs.org/zh-cn/download
+echo  Ã»×Ô¶¯´ò¿ªµÄ»°£¬ÊÖ¶¯·ÃÎÊ£ºhttps://nodejs.org/zh-cn/download
+echo.
+echo  °´ÈÎÒâ¼ü¹Ø±Õ´°¿Ú¡£
+pause >nul
+exit /b 1
+
+:old_node
+echo  [´íÎó] Node.js °æ±¾Ì«¾É£º!NODE_VER!
+echo  ÐèÒª 18 »ò¸ü¸ß°æ±¾£¬Çëµ½ÏÂÃæµØÖ·×°ÐÂ°æ£º
+echo    https://nodejs.org/zh-cn/download
+echo.
+echo  °´ÈÎÒâ¼ü¹Ø±Õ´°¿Ú¡£
+pause >nul
+exit /b 1
+
+:npm_fail
+echo.
+echo  [´íÎó] ÒÀÀµ°²×°Ê§°Ü¡£
+echo  Çë¼ì²éÍøÂçºóÖØÊÔ£»»¹ÊÇ²»ÐÐ¾Í°Ñ±¾´°¿Ú½ØÍ¼·¢¸øÎÒ¡£
+echo.
+echo  °´ÈÎÒâ¼ü¹Ø±Õ´°¿Ú¡£
+pause >nul
+exit /b 1

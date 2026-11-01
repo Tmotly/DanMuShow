@@ -1,6 +1,7 @@
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
+import { spawn } from 'node:child_process';
 import { WebSocketServer } from 'ws';
 import { ROOT, loadConfig, saveConfig, ensureConfigFile } from './config.js';
 import { onClient, state, stats, broadcast, setPlatform } from './hub.js';
@@ -196,6 +197,25 @@ wss.on('connection', (ws) => {
 
 /* ---------------- 启动 ---------------- */
 
+/**
+ * 打开系统默认浏览器。
+ * 双击 启动.bat 时带 --open，服务起来之后再开，避免“网页打不开”的时序问题。
+ */
+function openBrowser(url) {
+  if (process.env.DANMU_NO_BROWSER) return;
+  const [cmd, args] =
+    process.platform === 'win32'
+      ? ['cmd', ['/c', 'start', '', url]]
+      : process.platform === 'darwin'
+        ? ['open', [url]]
+        : ['xdg-open', [url]];
+  try {
+    spawn(cmd, args, { stdio: 'ignore', detached: true }).unref();
+  } catch {
+    // 开不了就算了，窗口里已经打印地址
+  }
+}
+
 server.listen(PORT, '127.0.0.1', () => {
   log('');
   log('  弹幕聚合面板已启动');
@@ -210,6 +230,8 @@ server.listen(PORT, '127.0.0.1', () => {
     startDemo();
     log('  演示模式：正在生成模拟消息');
   }
+
+  if (process.argv.includes('--open')) openBrowser(`http://127.0.0.1:${PORT}/control.html`);
 });
 
 function shutdown() {
