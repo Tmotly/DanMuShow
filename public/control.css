@@ -311,6 +311,34 @@ input[type="range"] {
   font-weight: 500;
 }
 
+/* 收到的消息类型徽标：排查「某类消息为什么没有」用 */
+.status-methods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  font-size: 10.5px;
+  color: var(--text-faint);
+  line-height: 1.6;
+  padding-top: 2px;
+}
+
+.status-methods span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  padding: 0 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  white-space: nowrap;
+}
+
+.status-methods i {
+  font-style: normal;
+  color: var(--text-dim);
+  opacity: 0.7;
+}
+
 .advanced {
   margin-top: 18px;
   border-top: 1px solid rgba(255, 255, 255, 0.06);

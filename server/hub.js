@@ -23,6 +23,8 @@ export const state = {
       fans: 0,
       live: false,
       loggedIn: false,
+      methods: {},
+      methodTotal: 0,
       error: '',
     },
     douyin: {
@@ -39,6 +41,8 @@ export const state = {
       fans: 0,
       live: false,
       loggedIn: false,
+      methods: {},
+      methodTotal: 0,
       error: '',
     },
   },
@@ -62,6 +66,21 @@ export function setEmojiMap(platform, map) {
   if (!map || !Object.keys(map).length) return;
   emojiMaps[platform] = { ...emojiMaps[platform], ...map };
   broadcast({ type: 'emoji', platform, map: emojiMaps[platform] });
+}
+
+/**
+ * 记录「收到过哪些类型的消息」。
+ * 排查「某类消息为什么没有」时，这比翻日志快——控制台直接能看到。
+ * 只有出现新类型时才广播，不会刷屏。
+ */
+export function recordMethod(id, method) {
+  const p = state.platforms[id];
+  if (!p || !method) return;
+  if (!p.methods) p.methods = {};
+  const isNew = !(method in p.methods);
+  p.methods[method] = (p.methods[method] || 0) + 1;
+  p.methodTotal = (p.methodTotal || 0) + 1;
+  if (isNew) broadcast({ type: 'platform', platform: { ...p } });
 }
 
 export function getEmojiMaps() {

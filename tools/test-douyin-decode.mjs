@@ -2,7 +2,7 @@
 // 验证「弹幕 / 礼物」能不能被解出来。不依赖真实房间。
 import zlib from 'node:zlib';
 import { DouyinSource } from '../server/platforms/douyin.js';
-import { onMessage } from '../server/hub.js';
+import { onMessage, state } from '../server/hub.js';
 
 /* ---- 最小 protobuf 编码器 ---- */
 function varint(v) {
@@ -107,6 +107,9 @@ check('礼物数量取自连击数', gift?.gift?.count === 3, JSON.stringify(gif
 check('礼物单价正确', gift?.gift?.unitPrice === 10, JSON.stringify(gift?.gift?.unitPrice));
 check('礼物头像拿到', String(gift?.user?.avatar || '').includes('douyinpic'));
 check('礼物有合并 key', !!gift?.giftKey, gift?.giftKey);
+check('记录了收到的消息类型', !!state.platforms.douyin.methods?.WebcastChatMessage,
+  JSON.stringify(state.platforms.douyin.methods || {}));
+check('礼物类型也被记录', !!state.platforms.douyin.methods?.WebcastGiftMessage);
 
 let pass = 0;
 for (const c of checks) {

@@ -101,6 +101,22 @@ function renderStatus() {
     if (p.error) bits.push(`<span style="color:#ff8f9f">${p.error}</span>`);
     meta.innerHTML = bits.length ? bits.join(' · ') : '填房间号后自动连接';
     item.appendChild(meta);
+
+    // 收到过哪些消息类型——排查「某类消息为什么没有」最直接
+    const methods = p.methods || {};
+    const keys = Object.keys(methods).sort((a, b) => methods[b] - methods[a]);
+    if (keys.length) {
+      const m = document.createElement('div');
+      m.className = 'status-methods';
+      const shown = keys.slice(0, 8);
+      m.innerHTML =
+        '收到类型：' +
+        shown.map((k) => `<span>${k}<i>×${methods[k]}</i></span>`).join('') +
+        (keys.length > shown.length ? `<span>…共 ${keys.length} 种</span>` : '');
+      m.title = keys.map((k) => `${k} × ${methods[k]}`).join('\n');
+      item.appendChild(m);
+    }
+
     grid.appendChild(item);
   }
 }

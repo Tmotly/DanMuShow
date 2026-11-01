@@ -378,18 +378,24 @@ function appendGift(msg) {
     appendChat(msg);
     return;
   }
-  const key = msg.giftKey;
+  // key 由服务端给：一次「连击」内相同，两次单独赠送不同。
+  // 加平台前缀避免两个平台的 id 撞车。
+  const key = msg.giftKey ? `${msg.platform}|${msg.giftKey}` : '';
   const now = Date.now();
 
-  // 同一用户同一礼物连击 → 就地更新数字，不刷屏
+  // 同一次连击 → 就地更新数字，不刷屏
   if (key && giftIndex.has(key)) {
     const rec = giftIndex.get(key);
     if (rec.node.isConnected && now - rec.at < 8000) {
       rec.at = now;
+      const incoming = Number(msg.gift?.count) || 1;
+      const prev = Number(rec.count) || 1;
+      // 连击的数字有两种下发方式：逐次递增（1,2,3…）或每次都发 1。两种都要算对
+      rec.count = incoming > prev ? incoming : prev + 1;
       const countEl = rec.node.querySelector('.gift-count');
-      if (countEl) countEl.textContent = `×${msg.gift?.count || 1}`;
+      if (countEl) countEl.textContent = `×${rec.count}`;
       const priceEl = rec.node.querySelector('.gift-price');
-      const yuan = formatYuan(msg.gift, msg.platform);
+      const yuan = formatYuan({ ...msg.gift, count: rec.count }, msg.platform);
       if (priceEl && yuan) priceEl.textContent = yuan;
       rec.node.classList.remove('bump');
       void rec.node.offsetWidth;
@@ -402,7 +408,7 @@ function appendGift(msg) {
   const pinned = isPinned(el.giftStream);
   const row = buildGift(msg);
   el.giftStream.appendChild(row);
-  if (key) giftIndex.set(key, { node: row, at: now });
+  if (key) giftIndex.set(key, { node: row, at: now, count: Number(msg.gift?.count) || 1 });
   giftCount++;
   trim(el.giftStream, cfg.display.maxGifts || 30);
   el.giftCount.textContent = String(giftCount);

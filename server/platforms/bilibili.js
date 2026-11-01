@@ -13,7 +13,7 @@
 import crypto from 'node:crypto';
 import zlib from 'node:zlib';
 import WebSocket from 'ws';
-import { push, setPlatform, setEmojiMap } from '../hub.js';
+import { push, setPlatform, setEmojiMap, recordMethod } from '../hub.js';
 import { decodeGiftV2 } from './bilibili-pb.js';
 
 const UA =
@@ -422,6 +422,7 @@ export class BilibiliSource {
 
   handle(msg) {
     const cmd = msg.cmd || '';
+    recordMethod('bilibili', cmd);
     if (cmd.startsWith('DANMU_MSG')) return this.onDanmaku(msg);
     if (cmd === 'SEND_GIFT_V2') return this.onGiftV2(msg);
     if (cmd === 'SEND_GIFT') return this.onGift(msg);
@@ -448,6 +449,8 @@ export class BilibiliSource {
       setPlatform('bilibili', { live: false });
       return;
     }
+    // 礼物相关的 cmd 改名时留个痕迹
+    if (/gift/i.test(cmd)) this.log('[B站] 未识别的礼物类消息：', cmd);
   }
 
   onDanmaku(msg) {
@@ -512,7 +515,9 @@ export class BilibiliSource {
     push({
       platform: 'bilibili',
       kind: 'gift',
-      giftKey: `${g.uid || name}:${g.giftName}`,
+      // batch_combo_id：一次「连击」共享同一个 id，两次单独赠送 id 不同。
+      // 实测每条礼物消息的 combo id 都是唯一的，所以用它既能合并连击，又不会吞掉隔几秒的第二次赠送。
+      giftKey: g.comboId || `${g.uid || name}:${g.giftName}:${Date.now()}`,
       user: {
         id: String(g.uid || ''),
         name,
@@ -541,7 +546,7 @@ export class BilibiliSource {
     push({
       platform: 'bilibili',
       kind: 'gift',
-      giftKey: `${d.uid ?? ''}:${d.giftName ?? d.giftId ?? ''}`,
+      giftKey: d.batch_combo_id || `${d.uid ?? ''}:${d.giftName ?? d.giftId ?? ''}:${Date.now()}`,
       user: { id: String(d.uid ?? ''), name, avatar: d.face || cached?.face || '' },
       gift: {
         name: d.giftName || '礼物',

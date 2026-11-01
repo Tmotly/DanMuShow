@@ -13,7 +13,7 @@ import WebSocket from 'ws';
 import { get_sign } from '../../vendor/douyin/webmssdk.js';
 import { pb, imageUrl } from './douyin-pb.js';
 import { collectStrings } from '../lib/pb.js';
-import { push, setPlatform } from '../hub.js';
+import { push, setPlatform, recordMethod } from '../hub.js';
 
 const UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36';
@@ -356,6 +356,7 @@ export class DouyinSource {
   }
 
   handle(m) {
+    recordMethod('douyin', m.method);
     switch (m.method) {
       case 'WebcastChatMessage':
         return this.onChat(m.payload);
@@ -374,6 +375,8 @@ export class DouyinSource {
       case 'WebcastControlMessage':
         return this.onControl(m.payload);
       default:
+        // 礼物相关的消息一旦改名，这里会留下痕迹，不至于「什么都收不到还查不出原因」
+        if (/gift/i.test(m.method || '')) this.log('[抖音] 未识别的礼物类消息：', m.method);
         return;
     }
   }
@@ -449,7 +452,10 @@ export class DouyinSource {
     push({
       platform: 'douyin',
       kind: 'gift',
-      giftKey: `${u.id ?? ''}:${g.giftId ?? gift.id ?? gift.name ?? ''}`,
+      // 同一次连击共享 groupId，两次单独赠送 groupId 不同 → 不会被吞
+      giftKey: g.groupId
+        ? `g${g.groupId}`
+        : `${u.id ?? ''}-${g.giftId ?? gift.id ?? gift.name ?? ''}-${Date.now()}`,
       user: {
         id: String(u.id ?? ''),
         name: u.nickname || '匿名观众',
