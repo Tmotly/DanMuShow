@@ -14,7 +14,10 @@ window.CSS = { escape: (s) => String(s) };
 window.fetch = async () => ({
   ok: true,
   json: async () => ({
-    config: { rooms: { bilibili: { roomId: '1' }, douyin: { roomId: '2' } }, display: { maxDanmaku: 80, maxGifts: 6, showHeader: true } },
+    config: {
+      rooms: { bilibili: { roomId: '1' }, douyin: { roomId: '2' } },
+      display: { maxDanmaku: 80, maxGifts: 6, showHeader: true, giftRatio: 45, showGifts: true },
+    },
     state: {
       platforms: {
         bilibili: { id: 'bilibili', status: 'connected', online: 15600, title: '测试直播间', anchor: '主播' },
@@ -110,6 +113,17 @@ const checks = [
 ];
 
 console.log('\n=== 表情断言 ===');
+checks.push(['礼物区按配置占 45% 高度', doc.getElementById('giftZone').style.flex === '0 0 45%', doc.getElementById('giftZone').style.flex]);
+checks.push(['礼物区默认可见', doc.getElementById('giftZone').hidden === false]);
+
+// 运行中把礼物区关掉，面板应立即隐藏
+sock.emit({
+  type: 'config',
+  config: { rooms: { bilibili: { roomId: '1' } }, display: { maxDanmaku: 80, maxGifts: 6, showHeader: true, giftRatio: 45, showGifts: false } },
+});
+await wait(20);
+checks.push(['关掉礼物区后面板隐藏', doc.getElementById('giftZone').hidden === true]);
+
 let pass = 0;
 for (const [n, ok] of checks) {
   console.log(`${ok ? '✓' : '✗'} ${n}`);

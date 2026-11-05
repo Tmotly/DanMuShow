@@ -396,3 +396,194 @@ code {
     padding: 24px 14px 60px;
   }
 }
+
+/* ---------- Cookie 说明 ---------- */
+.note-warn {
+  margin: 0 0 12px;
+  padding: 9px 12px;
+  border-radius: 9px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: #ffd9a8;
+  background: rgba(255, 176, 32, 0.1);
+  border: 1px solid rgba(255, 176, 32, 0.22);
+}
+
+.note-warn b {
+  color: #ffc46b;
+}
+
+/* ---------- 布局预览 ---------- */
+.layout-row {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+}
+
+.layout-preview {
+  position: relative;
+  flex: none;
+  width: 168px;
+  height: 218px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #0d1117;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+}
+
+.lp-zone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+  transition: height 0.12s ease;
+}
+
+.lp-gift {
+  flex: 0 0 32%;
+  background: linear-gradient(180deg, rgba(255, 204, 102, 0.22), rgba(255, 204, 102, 0.06));
+  color: #ffcf80;
+}
+
+.lp-chat {
+  flex: 1 1 auto;
+  background: rgba(120, 170, 255, 0.09);
+  color: #9dc0ff;
+}
+
+.layout-preview.no-gift .lp-gift,
+.layout-preview.no-gift .lp-divider {
+  display: none;
+}
+
+.lp-divider {
+  flex: none;
+  height: 12px;
+  cursor: ns-resize;
+  background: rgba(255, 255, 255, 0.09);
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  position: relative;
+}
+
+.lp-divider::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 26px;
+  height: 2px;
+  border-radius: 2px;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 3px 0 rgba(255, 255, 255, 0.25), 0 -3px 0 rgba(255, 255, 255, 0.25);
+}
+
+.lp-divider:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.layout-side {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.preset-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.preset-row .btn.active {
+  border-color: rgba(120, 170, 255, 0.55);
+  background: rgba(120, 170, 255, 0.16);
+  color: #cfe0ff;
+}
+
+/* ---------- 登录弹窗 ---------- */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(4, 6, 10, 0.72);
+  backdrop-filter: blur(3px);
+}
+
+.modal[hidden] {
+  display: none;
+}
+
+.modal-box {
+  width: min(360px, calc(100vw - 40px));
+  border-radius: 14px;
+  background: #12161d;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+}
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 13.5px;
+}
+
+.modal-body {
+  padding: 16px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+
+#loginQr svg {
+  width: 172px;
+  height: 172px;
+  border-radius: 10px;
+  background: #fff;
+  padding: 8px;
+  display: block;
+}
+
+.modal-status {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+.modal-status.ok {
+  color: #6ee7a8;
+}
+
+.modal-status.err {
+  color: #ff8f9f;
+}
+
+.modal-hint {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--text-faint);
+}
+
+.modal-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px 14px 14px;
+}

@@ -49,6 +49,8 @@ export const DEFAULT_CONFIG = {
     showEnter: false,
     showLike: false,
     mergeGiftCombo: true,
+    giftRatio: 32,        // 礼物区占整块面板的高度百分比
+    showGifts: true,      // 关掉就只看弹幕
     fontScale: 1,
     showHeader: true,
   },

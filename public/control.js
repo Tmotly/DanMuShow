@@ -52,6 +52,8 @@ function fillForm(cfg) {
   $('showLike').checked = !!cfg.display?.showLike;
   $('mergeGiftCombo').checked = cfg.display?.mergeGiftCombo !== false;
   $('showHeader').checked = cfg.display?.showHeader !== false;
+  $('showGifts').checked = cfg.display?.showGifts !== false;
+  setRatio(clampRatio(cfg.display?.giftRatio ?? 32));
 }
 
 const STATUS_TEXT = {
@@ -160,6 +162,8 @@ function collect() {
       showEnter: $('showEnter').checked,
       showLike: $('showLike').checked,
       mergeGiftCombo: $('mergeGiftCombo').checked,
+      giftRatio: clampRatio($('giftRatio').value),
+      showGifts: $('showGifts').checked,
       showHeader: $('showHeader').checked,
     },
   };
@@ -227,3 +231,197 @@ try {
     }
   };
 } catch {}
+
+
+/* ---------------- 布局：比例预览 ---------------- */
+
+const PREVIEW = $('layoutPreview');
+const LP_GIFT = $('lpGift');
+const RATIO = $('giftRatio');
+const RATIO_VAL = $('ratioVal');
+
+function clampRatio(v) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return 32;
+  return Math.min(75, Math.max(10, Math.round(n)));
+}
+
+/** 同步预览、滑块、数字 */
+function setRatio(v, { fromSlider } = {}) {
+  const ratio = clampRatio(v);
+  if (fromSlider === undefined) RATIO.value = String(ratio);
+  RATIO_VAL.textContent = `${ratio}%`;
+  LP_GIFT.style.flex = `0 0 ${ratio}%`;
+  for (const b of document.querySelectorAll('.preset-row .btn')) {
+    b.classList.toggle('active', Number(b.dataset.ratio) === ratio);
+  }
+  syncPreview();
+}
+
+function syncPreview() {
+  PREVIEW.classList.toggle('no-gift', !$('showGifts').checked);
+}
+
+RATIO?.addEventListener('input', () => setRatio(RATIO.value, { fromSlider: true }));
+$('showGifts')?.addEventListener('change', syncPreview);
+
+for (const btn of document.querySelectorAll('.preset-row .btn')) {
+  btn.addEventListener('click', () => setRatio(btn.dataset.ratio));
+}
+
+// 在预览里直接拖分界线
+if (PREVIEW) {
+  let dragging = false;
+  const applyFromY = (clientY) => {
+    const rect = PREVIEW.getBoundingClientRect();
+    const ratio = ((clientY - rect.top) / rect.height) * 100;
+    setRatio(ratio);
+  };
+  PREVIEW.addEventListener('pointerdown', (e) => {
+    if (!e.target.closest('.lp-divider')) return;
+    dragging = true;
+    PREVIEW.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  });
+  PREVIEW.addEventListener('pointermove', (e) => {
+    if (dragging) applyFromY(e.clientY);
+  });
+  PREVIEW.addEventListener('pointerup', (e) => {
+    dragging = false;
+    try {
+      PREVIEW.releasePointerCapture(e.pointerId);
+    } catch {}
+  });
+}
+
+/* ---------------- 扫码登录 ---------------- */
+
+const modal = $('loginModal');
+const modalTitle = $('loginTitle');
+const modalQr = $('loginQr');
+const modalStatus = $('loginStatus');
+const modalHint = $('loginHint');
+const btnRefresh = $('loginRefresh');
+
+let loginTimer = null;
+let loginKind = '';
+
+function setModalStatus(text, kind = '') {
+  modalStatus.textContent = text;
+  modalStatus.className = `modal-status ${kind}`;
+}
+
+function closeLogin({ silent } = {}) {
+  if (loginTimer) {
+    clearInterval(loginTimer);
+    loginTimer = null;
+  }
+  if (!silent && loginKind === 'douyin') {
+    fetch('/api/login/douyin/stop', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' }).catch(
+      () => {},
+    );
+  }
+  loginKind = '';
+  modal.hidden = true;
+  modalQr.innerHTML = '';
+  modalHint.textContent = '';
+}
+
+$('loginClose')?.addEventListener('click', () => closeLogin());
+$('loginCancel')?.addEventListener('click', () => closeLogin());
+modal?.addEventListener('click', (e) => {
+  if (e.target === modal) closeLogin();
+});
+
+/* ---- B站：服务端出二维码，前端轮询状态 ---- */
+
+async function startBiliLogin() {
+  loginKind = 'bilibili';
+  modal.hidden = false;
+  modalTitle.textContent = 'B站扫码登录';
+  modalQr.innerHTML = '';
+  btnRefresh.hidden = false;
+  btnRefresh.textContent = '刷新二维码';
+  modalHint.textContent = '用 B站手机客户端扫上面的码，确认后会自动填入 Cookie（还需要点保存）。';
+  setModalStatus('正在生成二维码…');
+
+  const r = await fetch('/api/login/bilibili/start', { method: 'POST' }).then((x) => x.json());
+  if (!r.ok) {
+    setModalStatus(r.error || '生成失败', 'err');
+    return;
+  }
+  modalQr.innerHTML = r.svg;
+  setModalStatus('等待扫码…');
+
+  const key = r.key;
+  clearInterval(loginTimer);
+  loginTimer = setInterval(async () => {
+    if (loginKind !== 'bilibili') return;
+    try {
+      const s = await fetch(`/api/login/bilibili/poll?key=${encodeURIComponent(key)}`).then((x) => x.json());
+      if (s.status === 'scanned') setModalStatus('已扫码，请在手机上确认');
+      else if (s.status === 'confirmed') {
+        clearInterval(loginTimer);
+        $('biliCookie').value = s.cookie;
+        setModalStatus('登录成功，Cookie 已填入（记得点下面的保存）', 'ok');
+        modalQr.innerHTML = '';
+        setTimeout(() => closeLogin({ silent: true }), 1200);
+      } else if (s.status === 'expired') {
+        clearInterval(loginTimer);
+        setModalStatus(s.message || '二维码已过期，请刷新', 'err');
+        modalQr.innerHTML = '';
+      }
+    } catch {
+      // 网络抖动，下一轮再说
+    }
+  }, 2000);
+}
+
+/* ---- 抖音：开一个临时浏览器窗口，扫码后读 Cookie ---- */
+
+async function startDouyinLogin() {
+  loginKind = 'douyin';
+  modal.hidden = false;
+  modalTitle.textContent = '抖音扫码登录';
+  modalQr.innerHTML = '<p class="modal-hint">即将打开浏览器窗口…</p>';
+  btnRefresh.hidden = true;
+  modalHint.textContent =
+    '抖音的扫码接口有风控，只能借本机浏览器：弹出来的窗口里点「登录」→ 扫码，登录成功后这里会自动填好。';
+  setModalStatus('正在启动浏览器…');
+
+  const r = await fetch('/api/login/douyin/start', { method: 'POST' }).then((x) => x.json());
+  if (!r.ok) {
+    setModalStatus(r.error || '启动失败', 'err');
+    modalQr.innerHTML = '';
+    return;
+  }
+  modalQr.innerHTML = '<p class="modal-hint">已打开浏览器窗口，<br/>请在窗口里点「登录」并扫码。</p>';
+  setModalStatus('等待扫码…');
+
+  const id = r.id;
+  clearInterval(loginTimer);
+  loginTimer = setInterval(async () => {
+    if (loginKind !== 'douyin') return;
+    try {
+      const s = await fetch(`/api/login/douyin/poll?id=${encodeURIComponent(id)}`).then((x) => x.json());
+      if (s.status === 'confirmed') {
+        clearInterval(loginTimer);
+        $('dyCookie').value = s.cookie;
+        setModalStatus('登录成功，Cookie 已填入（记得点下面的保存）', 'ok');
+        modalQr.innerHTML = '';
+        setTimeout(() => closeLogin({ silent: true }), 1200);
+      } else if (s.status === 'error') {
+        clearInterval(loginTimer);
+        setModalStatus(s.message || '出错了', 'err');
+      }
+    } catch {
+      // 网络抖动
+    }
+  }, 2000);
+}
+
+$('scanBili')?.addEventListener('click', startBiliLogin);
+$('scanDouyin')?.addEventListener('click', startDouyinLogin);
+btnRefresh?.addEventListener('click', () => {
+  if (loginKind === 'bilibili') startBiliLogin();
+});

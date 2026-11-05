@@ -9,6 +9,8 @@ import { onClient, state, stats, broadcast, setPlatform } from './hub.js';
 import { BilibiliSource, checkLogin } from './platforms/bilibili.js';
 import { DouyinSource } from './platforms/douyin.js';
 import { startDemo, stopDemo } from './demo.js';
+import { startBilibiliLogin, pollBilibiliLogin } from './login-bilibili.js';
+import { startDouyinLogin, pollDouyinLogin, stopDouyinLogin, findBrowser } from './login-douyin.js';
 
 ensureConfigFile();
 
@@ -179,6 +181,48 @@ const server = http.createServer(async (req, res) => {
     return json(res, 200, r);
   }
 
+  /* ---- 扫码登录 ---- */
+
+  // B站：服务端生成二维码并轮询状态，二维码以 SVG 直接给前端
+  if (p === '/api/login/bilibili/start' && req.method === 'POST') {
+    try {
+      return json(res, 200, { ok: true, ...(await startBilibiliLogin()) });
+    } catch (e) {
+      return json(res, 200, { ok: false, error: e.message });
+    }
+  }
+
+  if (p === '/api/login/bilibili/poll') {
+    try {
+      const r = await pollBilibiliLogin(url.searchParams.get('key') || '');
+      return json(res, 200, { ok: true, ...r });
+    } catch (e) {
+      return json(res, 200, { ok: false, status: 'error', message: e.message });
+    }
+  }
+
+  // 抖音：接口有风控，改用本机浏览器扫码 + DevTools 协议读 Cookie
+  if (p === '/api/login/douyin/start' && req.method === 'POST') {
+    const r = await startDouyinLogin();
+    return json(res, 200, r);
+  }
+
+  if (p === '/api/login/douyin/poll') {
+    const r = await pollDouyinLogin(url.searchParams.get('id') || '');
+    return json(res, 200, { ok: true, ...r });
+  }
+
+  if (p === '/api/login/douyin/stop' && req.method === 'POST') {
+    const body = await readBody(req);
+    await stopDouyinLogin(body.id);
+    return json(res, 200, { ok: true });
+  }
+
+  if (p === '/api/login/browser') {
+    const bin = findBrowser();
+    return json(res, 200, { ok: true, browser: bin ? path.basename(bin) : null });
+  }
+
   if (p === '/api/config' && req.method === 'POST') {
     const patch = await readBody(req);
     const before = JSON.stringify(cfg.rooms);
@@ -292,6 +336,7 @@ server.listen(PORT, '127.0.0.1', () => {
 function shutdown() {
   log('正在退出…');
   stopDemo();
+  stopDouyinLogin().catch(() => {});
   for (const id of ['bilibili', 'douyin']) stopPlatform(id);
   server.close(() => process.exit(0));
   setTimeout(() => process.exit(0), 1500);

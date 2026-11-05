@@ -47,27 +47,32 @@
         </div>
 
         <details class="advanced">
-          <summary>Cookie（B站建议填，抖音可不填）</summary>
+          <summary>Cookie（两个平台都建议填）</summary>
+          <p class="note-warn">
+            实测：<b>抖音不填 Cookie 收不到礼物</b>；B站不填则昵称被打码成 <code>一***</code>、表情只能显示文字。
+            两个平台都可以直接点「扫码登录」自动获取。
+          </p>
           <div class="grid-2">
             <div class="field">
               <label>
                 B站 Cookie
+                <button class="btn tiny primary" id="scanBili" type="button">扫码登录</button>
                 <button class="btn tiny" id="checkBili" type="button">检测登录态</button>
               </label>
               <textarea id="biliCookie" rows="3" placeholder="SESSDATA=...; bili_jct=...; DedeUserID=..."></textarea>
-              <small id="biliLoginHint">
-                不登录也能收弹幕，但平台会把部分用户昵称打码成 <code>一***</code>，表情也只能显示成
-                <code>[花]</code> 文字。填了 Cookie 才会显示全名，并加载表情图片。
-              </small>
+              <small>不登录也能收弹幕，但部分昵称会变成 <code>一***</code>，表情也只能显示成 <code>[花]</code> 文字。</small>
             </div>
             <div class="field">
-              <label>抖音 Cookie</label>
-              <textarea id="dyCookie" rows="3" placeholder="ttwid=...;（留空会自动获取）"></textarea>
-              <small>留空即可，程序会自己拿 ttwid。</small>
+              <label>
+                抖音 Cookie
+                <button class="btn tiny primary" id="scanDouyin" type="button">扫码登录</button>
+              </label>
+              <textarea id="dyCookie" rows="3" placeholder="sessionid=...; ttwid=...;"></textarea>
+              <small><b>建议填。</b>不填只能收弹幕，<b>观众送的礼物收不到</b>。</small>
             </div>
           </div>
           <details class="sub-help">
-            <summary>B站 Cookie 怎么拿</summary>
+            <summary>手动获取 B站 Cookie</summary>
             <ol class="steps">
               <li>浏览器登录 B站，打开任意直播间页面</li>
               <li>按 <code>F12</code> → 切到「网络 / Network」→ 刷新页面</li>
@@ -76,7 +81,41 @@
               <li>重点是里面有 <code>SESSDATA</code> 和 <code>DedeUserID</code> 这两段</li>
             </ol>
           </details>
+          <details class="sub-help">
+            <summary>手动获取抖音 Cookie</summary>
+            <ol class="steps">
+              <li>浏览器登录 <code>live.douyin.com</code></li>
+              <li>按 <code>F12</code> → 「网络 / Network」→ 刷新页面</li>
+              <li>点任意一个请求，把「请求标头」里的 <code>Cookie:</code> 整行复制过来</li>
+              <li>关键是里面有 <code>sessionid</code> 这一段</li>
+            </ol>
+          </details>
         </details>
+      </section>
+
+      <section class="card">
+        <div class="card-title">布局</div>
+        <div class="layout-row">
+          <div class="layout-preview" id="layoutPreview">
+            <div class="lp-zone lp-gift" id="lpGift">礼物</div>
+            <div class="lp-divider" id="lpDivider" title="按住上下拖动调整比例"></div>
+            <div class="lp-zone lp-chat">弹幕</div>
+          </div>
+          <div class="layout-side">
+            <div class="preset-row">
+              <button class="btn tiny" data-ratio="20" type="button">弹幕为主</button>
+              <button class="btn tiny" data-ratio="32" type="button">均衡</button>
+              <button class="btn tiny" data-ratio="50" type="button">礼物多</button>
+              <button class="btn tiny" data-ratio="66" type="button">礼物为主</button>
+            </div>
+            <div class="field">
+              <label>礼物区高度 <b id="ratioVal">32%</b></label>
+              <input id="giftRatio" type="range" min="10" max="75" step="1" value="32" />
+              <small>也可以直接拖左边预览里两个色块之间的分界线。</small>
+            </div>
+            <label class="toggle"><input type="checkbox" id="showGifts" /> 显示礼物区（关掉就只留弹幕，铺满整块）</label>
+          </div>
+        </div>
       </section>
 
       <section class="card">
@@ -129,6 +168,23 @@
           </ol>
         </details>
       </section>
+    </div>
+    <div class="modal" id="loginModal" hidden>
+      <div class="modal-box">
+        <div class="modal-head">
+          <b id="loginTitle">扫码登录</b>
+          <button class="btn tiny ghost" id="loginClose" type="button">关闭</button>
+        </div>
+        <div class="modal-body">
+          <div id="loginQr"></div>
+          <p class="modal-status" id="loginStatus">准备中…</p>
+          <p class="modal-hint" id="loginHint"></p>
+        </div>
+        <div class="modal-foot">
+          <button class="btn tiny" id="loginRefresh" type="button">刷新二维码</button>
+          <button class="btn tiny ghost" id="loginCancel" type="button">取消</button>
+        </div>
+      </div>
     </div>
     <script src="/control.js" type="module"></script>
   </body>

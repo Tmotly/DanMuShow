@@ -41,7 +41,7 @@ const PLATFORM_LABEL = { bilibili: 'B站', douyin: '抖音' };
 const PLATFORM_FULL = { bilibili: '哔哩哔哩', douyin: '抖音' };
 
 let cfg = {
-  display: { maxDanmaku: 200, maxGifts: 30, showEnter: false, showLike: false, mergeGiftCombo: true, showHeader: true, fontScale: 1 },
+  display: { maxDanmaku: 200, maxGifts: 30, showEnter: false, showLike: false, mergeGiftCombo: true, giftRatio: 32, showGifts: true, showHeader: true, fontScale: 1 },
   rooms: {},
 };
 let platformState = { bilibili: {}, douyin: {} };
@@ -496,7 +496,20 @@ function renderPlatforms() {
     el.subtitle.textContent = '等待接入直播间';
   }
   document.getElementById('head').style.display = cfg.display.showHeader === false ? 'none' : '';
+  applyLayout();
   renderOnline();
+}
+
+/** 礼物区高度比例 + 是否显示礼物区 */
+function applyLayout() {
+  const zone = document.getElementById('giftZone');
+  if (!zone) return;
+  const show = cfg.display.showGifts !== false;
+  zone.hidden = !show;
+  zone.style.display = show ? '' : 'none';
+  if (!show) return;
+  const ratio = Math.min(75, Math.max(10, Number(cfg.display.giftRatio) || 32));
+  zone.style.flex = `0 0 ${ratio}%`;
 }
 
 /** 顶部在线观众：两个平台相加给总数，右边是分平台明细 */
