@@ -1,4 +1,5 @@
 import http from 'node:http';
+import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { WebSocketServer } from 'ws';
@@ -9,9 +10,48 @@ import { BilibiliSource, checkLogin } from './platforms/bilibili.js';
 import { DouyinSource } from './platforms/douyin.js';
 import { startDemo, stopDemo } from './demo.js';
 
-const log = (...a) => console.log(new Date().toLocaleTimeString('zh-CN', { hour12: false }), ...a);
-
 ensureConfigFile();
+
+/**
+ * Windows 控制台的「快速编辑模式」会要命：窗口里只要有文本被选中，
+ * 任何往 stdout 写的操作都会阻塞，而 Node 在 Windows 上写 TTY 是同步的，
+ * 于是整个事件循环停住——表现就是「一直显示连接中，按一下回车才好」。
+ * 这里在启动时把它关掉（只是关掉选中暂停，不影响复制；失败也不影响运行）。
+ */
+function disableQuickEdit() {
+  if (process.platform !== 'win32') return;
+  const ps = [
+    "$ErrorActionPreference='SilentlyContinue'",
+    'Add-Type -Namespace W -Name C -MemberDefinition \'[DllImport("kernel32.dll")]public static extern IntPtr GetStdHandle(int n);[DllImport("kernel32.dll")]public static extern bool GetConsoleMode(IntPtr h,out uint m);[DllImport("kernel32.dll")]public static extern bool SetConsoleMode(IntPtr h,uint m);\'',
+    '$h=[W.C]::GetStdHandle(-10)',
+    '$m=0',
+    'if([W.C]::GetConsoleMode($h,[ref]$m)){[void][W.C]::SetConsoleMode($h,($m -band (-bnot 0x40)))}',
+  ].join('; ');
+  try {
+    // 必须和本进程共用同一个控制台才能改它的输入模式，所以不设 windowsHide
+    spawn('powershell', ['-NoProfile', '-NonInteractive', '-Command', ps], { stdio: 'ignore' }).unref();
+  } catch {
+    // 没 PowerShell 就算了，不影响主流程
+  }
+}
+disableQuickEdit();
+
+/* 日志同时落文件：万一控制台还是卡住，也能从文件里看出走到哪一步了 */
+const LOG_FILE = path.join(path.dirname(effectiveConfigPath()), 'danmushow.log');
+
+function log(...a) {
+  const line = `${new Date().toLocaleTimeString('zh-CN', { hour12: false })} ${a.join(' ')}`;
+  try {
+    if (fs.existsSync(LOG_FILE) && fs.statSync(LOG_FILE).size > 2 * 1024 * 1024) {
+      fs.renameSync(LOG_FILE, `${LOG_FILE}.1`);
+    }
+    fs.appendFileSync(LOG_FILE, `${line}\n`);
+  } catch {
+    // 写不了就算了
+  }
+  console.log(line);
+}
+
 const cfg = loadConfig();
 const PORT = Number(process.env.PORT || cfg.port || 7801);
 

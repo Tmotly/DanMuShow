@@ -17,6 +17,7 @@ import { push, setPlatform, recordMethod } from '../hub.js';
 
 const UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36';
+// 实测三个集群（webcast100/lf/lq）推送的消息集合完全一致，用默认这个即可
 const WS_HOST = 'webcast100-ws-web-hl.douyin.com';
 const SDK_VERSION = '1.0.15';
 const VERSION_CODE = 180800;
@@ -55,7 +56,7 @@ export function parseRoomInput(input) {
   return s.replace(/[^\w-]/g, '');
 }
 
-function buildWsUrl(roomId) {
+function buildWsUrl(roomId, host = WS_HOST) {
   const userUniqueId = (
     Math.floor(Math.random() * (7999999999999999999 - 7300000000000000000)) + 7300000000000000000
   ).toString();
@@ -106,11 +107,11 @@ function buildWsUrl(roomId) {
     need_persist_msg_count: '15',
     heartbeatDuration: '0',
   };
-  return `wss://${WS_HOST}/webcast/im/push/v2/?${new URLSearchParams(params).toString()}`;
+  return `wss://${host}/webcast/im/push/v2/?${new URLSearchParams(params).toString()}`;
 }
 
 export class DouyinSource {
-  constructor({ roomId, cookie }, { log = console.log } = {}) {
+  constructor({ roomId, cookie }, { log = console.log, host = WS_HOST } = {}) {
     this.input = parseRoomInput(roomId);
     this.userCookie = String(cookie || '').trim();
     this.cookie = this.userCookie;
@@ -121,6 +122,7 @@ export class DouyinSource {
     this.hbTimer = null;
     this.reconnectTimer = null;
     this.roomId = '';
+    this.host = host;
     this.likeBuffer = 0;
     this.likeTimer = null;
   }
@@ -265,7 +267,7 @@ export class DouyinSource {
       this.scheduleReconnect();
       return;
     }
-    const url = buildWsUrl(this.roomId);
+    const url = buildWsUrl(this.roomId, this.host);
     this.log('[抖音] 连接弹幕服务器…');
     const ws = new WebSocket(url, {
       headers: {
@@ -333,11 +335,13 @@ export class DouyinSource {
     }
 
     for (const m of resp.messagesList || []) {
-      // 首次出现的新消息类型记一笔，方便排查「为什么没显示」
-      if (m.method && !this.seenMethods) this.seenMethods = new Set();
-      if (m.method && !this.seenMethods.has(m.method) && this.seenMethods.size < 12) {
-        this.seenMethods.add(m.method);
-        this.log('[抖音] 消息类型', m.method);
+      // 首次出现的新消息类型记一笔（不设上限，否则礼物类型会被挤掉）
+      if (m.method) {
+        if (!this.seenMethods) this.seenMethods = new Set();
+        if (!this.seenMethods.has(m.method)) {
+          this.seenMethods.add(m.method);
+          this.log('[抖音] 消息类型', m.method);
+        }
       }
       try {
         this.handle(m);
@@ -375,8 +379,14 @@ export class DouyinSource {
       case 'WebcastControlMessage':
         return this.onControl(m.payload);
       default:
-        // 礼物相关的消息一旦改名，这里会留下痕迹，不至于「什么都收不到还查不出原因」
-        if (/gift/i.test(m.method || '')) this.log('[抖音] 未识别的礼物类消息：', m.method);
+        // 礼物类消息一旦改名，这里留个痕迹；同一种只记一次，别刷屏
+        if (/gift/i.test(m.method || '') && !/GiftSort/i.test(m.method)) {
+          if (!this.warnedMethods) this.warnedMethods = new Set();
+          if (!this.warnedMethods.has(m.method)) {
+            this.warnedMethods.add(m.method);
+            this.log('[抖音] 未识别的礼物类消息：', m.method);
+          }
+        }
         return;
     }
   }
