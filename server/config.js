@@ -48,6 +48,7 @@ export const DEFAULT_CONFIG = {
     maxGifts: 30,
     showEnter: false,
     showLike: false,
+    mergeGiftCombo: true,
     fontScale: 1,
     showHeader: true,
   },

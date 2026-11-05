@@ -50,6 +50,7 @@ function fillForm(cfg) {
   $('fontScale').value = cfg.display?.fontScale ?? 1;
   $('showEnter').checked = !!cfg.display?.showEnter;
   $('showLike').checked = !!cfg.display?.showLike;
+  $('mergeGiftCombo').checked = cfg.display?.mergeGiftCombo !== false;
   $('showHeader').checked = cfg.display?.showHeader !== false;
 }
 
@@ -158,6 +159,7 @@ function collect() {
       fontScale: Number($('fontScale').value) || 1,
       showEnter: $('showEnter').checked,
       showLike: $('showLike').checked,
+      mergeGiftCombo: $('mergeGiftCombo').checked,
       showHeader: $('showHeader').checked,
     },
   };

@@ -41,7 +41,7 @@ const PLATFORM_LABEL = { bilibili: 'B站', douyin: '抖音' };
 const PLATFORM_FULL = { bilibili: '哔哩哔哩', douyin: '抖音' };
 
 let cfg = {
-  display: { maxDanmaku: 200, maxGifts: 30, showEnter: false, showLike: false, showHeader: true, fontScale: 1 },
+  display: { maxDanmaku: 200, maxGifts: 30, showEnter: false, showLike: false, mergeGiftCombo: true, showHeader: true, fontScale: 1 },
   rooms: {},
 };
 let platformState = { bilibili: {}, douyin: {} };
@@ -380,7 +380,9 @@ function appendGift(msg) {
   }
   // key 由服务端给：一次「连击」内相同，两次单独赠送不同。
   // 加平台前缀避免两个平台的 id 撞车。
-  const key = msg.giftKey ? `${msg.platform}|${msg.giftKey}` : '';
+  // 关掉「连击合并」时给空 key，等于每条消息都单独一行。
+  const merge = cfg.display.mergeGiftCombo !== false;
+  const key = merge && msg.giftKey ? `${msg.platform}|${msg.giftKey}` : '';
   const now = Date.now();
 
   // 同一次连击 → 就地更新数字，不刷屏
